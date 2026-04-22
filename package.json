@@ -1,0 +1,45 @@
+{
+  "name": "@moodlr/task-manager-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for the Moodlr Task Manager — browse, create, edit, and move tasks from any MCP-compatible client.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "task-manager-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "task-manager",
+    "moodlr",
+    "claude"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moodlr-com/task-manager-mcp.git"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}
