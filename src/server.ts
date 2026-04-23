@@ -3,6 +3,8 @@ import type { ApiClient } from "./client.js";
 import { registerWorkspaceTools } from "./tools/workspaces.js";
 import { registerBoardTools } from "./tools/boards.js";
 import { registerTaskTools } from "./tools/tasks.js";
+import { registerTagTools } from "./tools/tags.js";
+import { registerNotificationTools } from "./tools/notifications.js";
 
 const PACKAGE_VERSION = "0.1.0";
 
@@ -30,6 +32,8 @@ export function createServer(api: ApiClient): McpServer {
   registerWorkspaceTools(server, api);
   registerBoardTools(server, api);
   registerTaskTools(server, api);
+  registerTagTools(server, api);
+  registerNotificationTools(server, api);
 
   return server;
 }

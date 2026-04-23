@@ -12,18 +12,10 @@ MCP (Claude Desktop, Claude Code, outros).
 ## Gerar uma API key
 
 1. Entre no dashboard do Task Manager.
-2. Abra o devtools do navegador e rode:
-   ```js
-   fetch('/api/profile/api-keys', {
-     method: 'POST',
-     headers: { 'content-type': 'application/json' },
-     body: JSON.stringify({ label: 'mcp-cli' })
-   }).then(r => r.json()).then(console.log)
-   ```
-3. Copie o campo `key` da resposta. **Ele nao aparece mais depois.**
-4. Para revogar: `DELETE /api/profile/api-keys/<id>`.
-
-> Uma pagina de settings para gerenciar chaves via UI esta no roadmap.
+2. Clique no seu avatar no header → **Credenciais**.
+3. Digite um label (ex: `mcp-laptop`) e clique **Create**.
+4. **Copie o token imediatamente** — nao ha como recupera-lo depois.
+5. Para revogar: mesma tela, clique no icone de lixeira.
 
 ## Configuracao no Claude Desktop
 
@@ -81,6 +73,16 @@ Adicione ao `.mcp.json` do projeto (ou `~/.claude.json`):
 - `update_task({ taskId, ...fields })` — patch parcial
 - `move_task({ taskId, statusId })` — atalho para mover entre colunas (statusId=null = Backlog)
 - `delete_task({ taskId })` — requer admin
+
+### Tags
+- `list_tags({ workspaceId, includeDeleted? })`
+- `create_tag({ workspaceId, name })` — idempotente: restaura se ja existir e estiver deletada
+
+### Notificacoes
+- `list_notifications({ unreadOnly? })`
+- `mark_notification_read({ notificationId })`
+- `mark_all_notifications_read()`
+- `delete_notification({ notificationId })`
 
 ## Desenvolvimento
 
