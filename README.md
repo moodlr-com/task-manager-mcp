@@ -60,23 +60,68 @@ Adicione ao `.mcp.json` do projeto (ou `~/.claude.json`):
 
 ## Tools disponiveis
 
-### Leitura
+### Workspaces
 - `list_workspaces` — workspaces acessiveis ao caller
-- `list_boards({ workspaceId? })` — boards, opcionalmente filtrados por workspace
-- `list_statuses({ boardId })` — colunas de status do board (use os ids para mover tasks)
-- `list_tasks({ boardId?, statusId?, priority?, assigneeIds?, tagIds?, search? })`
 - `list_workspace_members({ workspaceId })`
-- `list_board_members({ boardId })`
+- `add_workspace_member({ workspaceId, userId, role? })` — role: admin | member (default member)
+- `update_workspace_member_role({ workspaceId, userId, role })`
+- `remove_workspace_member({ workspaceId, userId })`
 
-### Escrita
-- `create_task({ boardId, title, description?, statusId?, groupId?, priority?, assigneeIds?, tagIds?, startDate?, dueDate? })`
-- `update_task({ taskId, ...fields })` — patch parcial
-- `move_task({ taskId, statusId })` — atalho para mover entre colunas (statusId=null = Backlog)
+### Boards
+- `list_boards({ workspaceId? })`
+- `list_board_members({ boardId })`
+- `list_statuses({ boardId })` — sempre retorna o set canonico de 6 statuses
+- `create_board({ workspaceId, name, description?, color?, icon? })`
+- `update_board({ boardId, ...fields })`
+- `delete_board({ boardId })`
+- `add_board_member({ boardId, userId })`
+- `remove_board_member({ boardId, userId })`
+
+### Tasks
+- `list_tasks({ boardId?, statusId?, priority?, assigneeIds?, tagIds?, sprintId?, search? })`
+- `list_assigned_to_me()` — feed cross-board do assignee atual
+- `create_task({ boardId, title, description?, statusId?, groupId?, priority?, assigneeIds?, tagIds?, sprintId?, startDate?, dueDate? })`
+- `update_task({ taskId, ...fields })` — patch parcial; aceita `sprintId`
+- `move_task({ taskId, statusId })` — atalho de coluna (statusId=null = Backlog)
 - `delete_task({ taskId })` — requer admin
+- `bulk_update_tasks({ taskIds, update })` — `update.addAssigneeIds`/`addTagIds` somam (nao substituem); `statusId`/`priority`/`sprintId`/datas sobrescrevem
+- `bulk_delete_tasks({ taskIds })`
+
+### Checklist (subtasks)
+- `list_checklist({ taskId })`
+- `add_checklist_item({ taskId, title })`
+- `toggle_checklist_item({ taskId, itemId, isDone? })` — sem `isDone` faz toggle
+- `rename_checklist_item({ taskId, itemId, title })`
+- `remove_checklist_item({ taskId, itemId })`
+- `reorder_checklist({ taskId, orderedIds })`
+
+### Comments
+- `list_comments({ taskId })`
+- `add_comment({ taskId, body })`
+- `edit_comment({ taskId, commentId, body })`
+- `delete_comment({ taskId, commentId })`
+
+### Activity
+- `list_task_activity({ taskId })`
+
+### Sprints
+- `list_sprints({ boardId })`
+- `create_sprint({ boardId, name, startDate, endDate, goal? })`
+- `update_sprint({ sprintId, ...fields })`
+- `start_sprint({ sprintId })` — planned -> active
+- `complete_sprint({ sprintId, moveIncompleteTo })` — `moveIncompleteTo`: `"backlog"` ou um sprintId planejado
+- `delete_sprint({ sprintId })`
 
 ### Tags
-- `list_tags({ workspaceId, includeDeleted? })`
-- `create_tag({ workspaceId, name })` — idempotente: restaura se ja existir e estiver deletada
+- `list_tags({ workspaceId })`
+- `create_tag({ workspaceId, name, color? })` — idempotente
+- `update_tag({ tagId, name?, color? })`
+- `delete_tag({ tagId })`
+
+### Users
+- `list_users({ search? })`
+- `find_user_by_email({ email })`
+- `whoami()`
 
 ### Notificacoes
 - `list_notifications({ unreadOnly? })`

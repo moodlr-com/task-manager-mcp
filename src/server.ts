@@ -5,8 +5,13 @@ import { registerBoardTools } from "./tools/boards.js";
 import { registerTaskTools } from "./tools/tasks.js";
 import { registerTagTools } from "./tools/tags.js";
 import { registerNotificationTools } from "./tools/notifications.js";
+import { registerChecklistTools } from "./tools/checklist.js";
+import { registerCommentTools } from "./tools/comments.js";
+import { registerActivityTools } from "./tools/activity.js";
+import { registerSprintTools } from "./tools/sprints.js";
+import { registerUserTools } from "./tools/users.js";
 
-const PACKAGE_VERSION = "0.1.0";
+const PACKAGE_VERSION = "0.2.0";
 
 export function createServer(api: ApiClient): McpServer {
   const server = new McpServer(
@@ -25,6 +30,12 @@ export function createServer(api: ApiClient): McpServer {
         "",
         "statusId=null means the task is in the Backlog column.",
         "Dates are ISO strings (YYYY-MM-DD). Priority is one of low/medium/high/critical.",
+        "",
+        "Resolving people: list_users / find_user_by_email return user ids that you can pass as assigneeIds.",
+        "Sprints are board-scoped; at most one is active per board (list_sprints / start_sprint / complete_sprint).",
+        "Checklist items live under each task (list_checklist / add_checklist_item / toggle_checklist_item).",
+        "Comments and activity timeline are also exposed (list_comments, list_task_activity).",
+        "Bulk apply changes with bulk_update_tasks / bulk_delete_tasks instead of looping update_task.",
       ].join("\n"),
     },
   );
@@ -34,6 +45,11 @@ export function createServer(api: ApiClient): McpServer {
   registerTaskTools(server, api);
   registerTagTools(server, api);
   registerNotificationTools(server, api);
+  registerChecklistTools(server, api);
+  registerCommentTools(server, api);
+  registerActivityTools(server, api);
+  registerSprintTools(server, api);
+  registerUserTools(server, api);
 
   return server;
 }

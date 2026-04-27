@@ -1,6 +1,6 @@
 {
   "name": "@moodlr/task-manager-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for the Moodlr Task Manager — browse, create, edit, and move tasks from any MCP-compatible client.",
   "license": "MIT",
   "type": "module",

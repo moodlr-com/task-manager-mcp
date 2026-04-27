@@ -45,4 +45,82 @@ export function registerWorkspaceTools(server: McpServer, api: ApiClient) {
       }
     },
   );
+
+  server.registerTool(
+    "add_workspace_member",
+    {
+      title: "Add a user to a workspace",
+      description:
+        "Grant a user workspace-level access. Default role is `member` (read-only across every board); pass `admin` to allow them to manage boards/tags/members. Personal workspaces can't have additional members.",
+      inputSchema: {
+        workspaceId: z.string(),
+        userId: z.string(),
+        role: z
+          .enum(["admin", "member"])
+          .optional()
+          .describe("Defaults to 'member'"),
+      },
+    },
+    async ({ workspaceId, userId, role }) => {
+      try {
+        const result = await api.post<unknown>(
+          `/api/workspaces/${workspaceId}/members`,
+          { userId, role },
+        );
+        return toJson(result);
+      } catch (err) {
+        return toError("add_workspace_member", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "update_workspace_member_role",
+    {
+      title: "Promote or demote a workspace member",
+      description:
+        "Change a workspace member's role between admin and member. Demoting the last remaining admin is refused.",
+      inputSchema: {
+        workspaceId: z.string(),
+        userId: z.string(),
+        role: z.enum(["admin", "member"]),
+      },
+    },
+    async ({ workspaceId, userId, role }) => {
+      try {
+        const result = await api.patch<unknown>(
+          `/api/workspaces/${workspaceId}/members`,
+          { userId, role },
+        );
+        return toJson(result);
+      } catch (err) {
+        return toError("update_workspace_member_role", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "remove_workspace_member",
+    {
+      title: "Remove a workspace member",
+      description:
+        "Revoke a user's workspace access. Removing the last admin on the workspace is refused.",
+      inputSchema: {
+        workspaceId: z.string(),
+        userId: z.string(),
+      },
+      annotations: { destructiveHint: true },
+    },
+    async ({ workspaceId, userId }) => {
+      try {
+        await api.delete<void>(
+          `/api/workspaces/${workspaceId}/members`,
+          { userId },
+        );
+        return toJson({ success: true, workspaceId, userId });
+      } catch (err) {
+        return toError("remove_workspace_member", err);
+      }
+    },
+  );
 }

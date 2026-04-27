@@ -24,6 +24,12 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
           .array(z.string())
           .optional()
           .describe("Filter by one or more tag UUIDs"),
+        sprintId: z
+          .string()
+          .optional()
+          .describe(
+            "Sprint UUID, or the literal 'backlog' to match tasks not in any sprint",
+          ),
         search: z
           .string()
           .optional()
@@ -39,11 +45,31 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
           priority: args.priority,
           assignee_id: args.assigneeIds,
           tag_id: args.tagIds,
+          sprint_id: args.sprintId,
           search: args.search,
         });
         return toJson(tasks);
       } catch (err) {
         return toError("list_tasks", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "list_assigned_to_me",
+    {
+      title: "List tasks assigned to the caller",
+      description:
+        "Cross-board feed of every task the caller is an assignee on (the personal 'Assigned to me' inbox). Includes board + workspace context per task and the joined status/sprint records.",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async () => {
+      try {
+        const tasks = await api.get<unknown[]>("/api/tasks/assigned-to-me");
+        return toJson(tasks);
+      } catch (err) {
+        return toError("list_assigned_to_me", err);
       }
     },
   );
@@ -67,6 +93,13 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
         priority: priorityEnum.optional().describe("Defaults to medium"),
         assigneeIds: z.array(z.string()).optional(),
         tagIds: z.array(z.string()).optional(),
+        sprintId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            "Sprint UUID on the same board, or null/omitted for the backlog (no sprint)",
+          ),
         startDate: z.string().optional().describe("YYYY-MM-DD"),
         dueDate: z
           .string()
@@ -99,6 +132,11 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
         priority: priorityEnum.optional(),
         assigneeIds: z.array(z.string()).optional(),
         tagIds: z.array(z.string()).optional(),
+        sprintId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Sprint UUID on the same board; null sends to backlog"),
         startDate: z.string().nullable().optional(),
         dueDate: z.string().nullable().optional(),
       },
@@ -156,6 +194,59 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
         return toJson({ success: true, taskId });
       } catch (err) {
         return toError("delete_task", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "bulk_update_tasks",
+    {
+      title: "Apply the same update to many tasks",
+      description:
+        "Patch every task in `taskIds` with the same `update` payload. Status/priority/dates/sprint are replaced; addAssigneeIds/addTagIds are merged on top of the task's existing set (they don't replace). The server skips tasks the caller doesn't have access to and silently drops invalid status/tag/assignee ids per task.",
+      inputSchema: {
+        taskIds: z.array(z.string()).min(1),
+        update: z
+          .object({
+            statusId: z.string().nullable().optional(),
+            priority: priorityEnum.optional(),
+            startDate: z.string().nullable().optional(),
+            dueDate: z.string().nullable().optional(),
+            sprintId: z.string().nullable().optional(),
+            addAssigneeIds: z.array(z.string()).optional(),
+            addTagIds: z.array(z.string()).optional(),
+          })
+          .refine(
+            (u) => Object.keys(u).length > 0,
+            "update must contain at least one field",
+          ),
+      },
+    },
+    async (args) => {
+      try {
+        const result = await api.post<unknown>("/api/tasks/bulk", args);
+        return toJson(result);
+      } catch (err) {
+        return toError("bulk_update_tasks", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "bulk_delete_tasks",
+    {
+      title: "Delete many tasks at once",
+      description:
+        "Delete every task in `taskIds`. Per-task auth still applies — only tasks on boards where the caller is workspace_admin or super_admin get removed; the rest are silently skipped. Returns the count actually deleted.",
+      inputSchema: { taskIds: z.array(z.string()).min(1) },
+      annotations: { destructiveHint: true },
+    },
+    async ({ taskIds }) => {
+      try {
+        const result = await api.delete<unknown>("/api/tasks/bulk", { taskIds });
+        return toJson(result);
+      } catch (err) {
+        return toError("bulk_delete_tasks", err);
       }
     },
   );
