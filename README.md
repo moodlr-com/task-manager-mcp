@@ -1,26 +1,26 @@
 # @moodlr/task-manager-mcp
 
-MCP server para o [Moodlr Task Manager](https://github.com/moodlr-com/task-manager).
-Permite ler, criar, editar e mover tarefas via qualquer cliente compatível com
-MCP (Claude Desktop, Claude Code, outros).
+MCP server for the [Moodlr Task Manager](https://github.com/moodlr-com/task-manager).
+Read, create, edit, and move tasks from any MCP-compatible client
+(Claude Desktop, Claude Code, others).
 
-## Pre-requisitos
+## Prerequisites
 
 - Node.js 20+
-- Uma API key gerada no Task Manager (token comeca com `moodlr_`)
+- An API key generated in the Task Manager (token starts with `moodlr_`)
 
-## Gerar uma API key
+## Generating an API key
 
-1. Entre no dashboard do Task Manager.
-2. Clique no seu avatar no header → **Credenciais**.
-3. Digite um label (ex: `mcp-laptop`) e clique **Create**.
-4. **Copie o token imediatamente** — nao ha como recupera-lo depois.
-5. Para revogar: mesma tela, clique no icone de lixeira.
+1. Open the Task Manager dashboard.
+2. Click your avatar in the header → **Credentials**.
+3. Type a label (e.g. `mcp-laptop`) and click **Create**.
+4. **Copy the token immediately** — there's no way to recover it later.
+5. To revoke: same screen, click the trash icon.
 
-## Configuracao no Claude Desktop
+## Claude Desktop setup
 
-Edite `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
-ou `%APPDATA%/Claude/claude_desktop_config.json` (Windows):
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+or `%APPDATA%/Claude/claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -37,11 +37,11 @@ ou `%APPDATA%/Claude/claude_desktop_config.json` (Windows):
 }
 ```
 
-Reinicie o Claude Desktop. As tools ficam disponiveis imediatamente.
+Restart Claude Desktop. The tools become available immediately.
 
-## Configuracao no Claude Code
+## Claude Code setup
 
-Adicione ao `.mcp.json` do projeto (ou `~/.claude.json`):
+Add to the project's `.mcp.json` (or `~/.claude.json`):
 
 ```json
 {
@@ -58,19 +58,19 @@ Adicione ao `.mcp.json` do projeto (ou `~/.claude.json`):
 }
 ```
 
-## Tools disponiveis
+## Available tools
 
 ### Workspaces
-- `list_workspaces` — workspaces acessiveis ao caller
+- `list_workspaces` — workspaces the caller can access
 - `list_workspace_members({ workspaceId })`
-- `add_workspace_member({ workspaceId, userId, role? })` — role: admin | member (default member)
+- `add_workspace_member({ workspaceId, userId, role? })` — role: admin | member (defaults to member)
 - `update_workspace_member_role({ workspaceId, userId, role })`
 - `remove_workspace_member({ workspaceId, userId })`
 
 ### Boards
 - `list_boards({ workspaceId? })`
 - `list_board_members({ boardId })`
-- `list_statuses({ boardId })` — sempre retorna o set canonico de 6 statuses
+- `list_statuses({ boardId })` — always returns the canonical 6-status set
 - `create_board({ workspaceId, name, description?, color?, icon? })`
 - `update_board({ boardId, ...fields })`
 - `delete_board({ boardId })`
@@ -79,18 +79,18 @@ Adicione ao `.mcp.json` do projeto (ou `~/.claude.json`):
 
 ### Tasks
 - `list_tasks({ boardId?, statusId?, priority?, assigneeIds?, tagIds?, sprintId?, search? })`
-- `list_assigned_to_me()` — feed cross-board do assignee atual
+- `list_assigned_to_me()` — cross-board feed for the current assignee
 - `create_task({ boardId, title, description?, statusId?, groupId?, priority?, assigneeIds?, tagIds?, sprintId?, startDate?, dueDate? })`
-- `update_task({ taskId, ...fields })` — patch parcial; aceita `sprintId`
-- `move_task({ taskId, statusId })` — atalho de coluna (statusId=null = Backlog)
-- `delete_task({ taskId })` — requer admin
-- `bulk_update_tasks({ taskIds, update })` — `update.addAssigneeIds`/`addTagIds` somam (nao substituem); `statusId`/`priority`/`sprintId`/datas sobrescrevem
+- `update_task({ taskId, ...fields })` — partial patch; accepts `sprintId`
+- `move_task({ taskId, statusId })` — column shortcut (statusId=null = Backlog)
+- `delete_task({ taskId })` — admin only
+- `bulk_update_tasks({ taskIds, update })` — `update.addAssigneeIds`/`addTagIds` merge with the existing set; `statusId`/`priority`/`sprintId`/dates overwrite
 - `bulk_delete_tasks({ taskIds })`
 
 ### Checklist (subtasks)
 - `list_checklist({ taskId })`
 - `add_checklist_item({ taskId, title })`
-- `toggle_checklist_item({ taskId, itemId, isDone? })` — sem `isDone` faz toggle
+- `toggle_checklist_item({ taskId, itemId, isDone? })` — omit `isDone` to flip
 - `rename_checklist_item({ taskId, itemId, title })`
 - `remove_checklist_item({ taskId, itemId })`
 - `reorder_checklist({ taskId, orderedIds })`
@@ -108,13 +108,13 @@ Adicione ao `.mcp.json` do projeto (ou `~/.claude.json`):
 - `list_sprints({ boardId })`
 - `create_sprint({ boardId, name, startDate, endDate, goal? })`
 - `update_sprint({ sprintId, ...fields })`
-- `start_sprint({ sprintId })` — planned -> active
-- `complete_sprint({ sprintId, moveIncompleteTo })` — `moveIncompleteTo`: `"backlog"` ou um sprintId planejado
+- `start_sprint({ sprintId })` — planned → active
+- `complete_sprint({ sprintId, moveIncompleteTo })` — `moveIncompleteTo`: `"backlog"` or a planned sprintId
 - `delete_sprint({ sprintId })`
 
 ### Tags
 - `list_tags({ workspaceId })`
-- `create_tag({ workspaceId, name, color? })` — idempotente
+- `create_tag({ workspaceId, name, color? })` — idempotent
 - `update_tag({ tagId, name?, color? })`
 - `delete_tag({ tagId })`
 
@@ -123,13 +123,13 @@ Adicione ao `.mcp.json` do projeto (ou `~/.claude.json`):
 - `find_user_by_email({ email })`
 - `whoami()`
 
-### Notificacoes
+### Notifications
 - `list_notifications({ unreadOnly? })`
 - `mark_notification_read({ notificationId })`
 - `mark_all_notifications_read()`
 - `delete_notification({ notificationId })`
 
-## Desenvolvimento
+## Development
 
 ```bash
 git clone https://github.com/moodlr-com/task-manager-mcp.git
@@ -139,7 +139,7 @@ cp .env.example .env   # set MOODLR_API_URL and MOODLR_API_KEY
 npm run dev            # tsx src/index.ts — stdio loop
 ```
 
-Para testar com um cliente MCP local sem publicar:
+To test with a local MCP client without publishing:
 
 ```json
 {
@@ -153,6 +153,6 @@ Para testar com um cliente MCP local sem publicar:
 }
 ```
 
-## Licenca
+## License
 
 MIT
