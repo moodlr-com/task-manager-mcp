@@ -11,7 +11,7 @@ import { registerActivityTools } from "./tools/activity.js";
 import { registerSprintTools } from "./tools/sprints.js";
 import { registerUserTools } from "./tools/users.js";
 
-const PACKAGE_VERSION = "0.2.0";
+const PACKAGE_VERSION = "0.2.1";
 
 export function createServer(api: ApiClient): McpServer {
   const server = new McpServer(
