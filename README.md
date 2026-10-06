@@ -1,5 +1,7 @@
 # @moodlr/task-manager-mcp
 
+Full tool reference, permissions, release procedure and examples: [docs/MCP.md](docs/MCP.md).
+
 MCP server for the [Moodlr Task Manager](https://github.com/moodlr-com/task-manager).
 Read, create, edit, and move tasks from any MCP-compatible client
 (Claude Desktop, Claude Code, others).
@@ -78,14 +80,25 @@ Add to the project's `.mcp.json` (or `~/.claude.json`):
 - `remove_board_member({ boardId, userId })`
 
 ### Tasks
+- `get_task({ taskId })` — fetch one complete task by id
 - `list_tasks({ boardId?, statusId?, priority?, assigneeIds?, tagIds?, sprintId?, search? })`
 - `list_assigned_to_me()` — cross-board feed for the current assignee
 - `create_task({ boardId, title, description?, statusId?, groupId?, priority?, assigneeIds?, tagIds?, sprintId?, startDate?, dueDate? })`
 - `update_task({ taskId, ...fields })` — partial patch; accepts `sprintId`
 - `move_task({ taskId, statusId })` — column shortcut (statusId=null = Backlog)
+- `complete_task({ taskId })` — move to the board's canonical Done status
+- `reopen_task({ taskId })` — move back to the board's canonical To Do status
 - `delete_task({ taskId })` — admin only
 - `bulk_update_tasks({ taskIds, update })` — `update.addAssigneeIds`/`addTagIds` merge with the existing set; `statusId`/`priority`/`sprintId`/dates overwrite
 - `bulk_delete_tasks({ taskIds })`
+
+### Additional management
+- `list_groups({ boardId })`, `create_group({ boardId, name, order? })`, `reorder_tasks({ boardId, orderedIds })`
+- `get_workspace`, `create_workspace`, `update_workspace`, `delete_workspace`
+- `search({ query, limit? })`
+- `list_saved_filters`, `create_saved_filter`, `delete_saved_filter`
+- `list_invites`, `invite_user`, `revoke_invite`
+- `update_profile`, `get_notification_preferences`, `set_notification_preference`
 
 ### Checklist (subtasks)
 - `list_checklist({ taskId })`

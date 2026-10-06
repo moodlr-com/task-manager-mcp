@@ -4,8 +4,48 @@ import type { ApiClient } from "../client.js";
 import { toError, toJson } from "./util.js";
 
 const priorityEnum = z.enum(["low", "medium", "high", "critical"]);
+const dateInput = z
+  .string()
+  .date("Use a valid calendar date in YYYY-MM-DD format");
+
+function normalizedStatusName(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+async function findBoardStatusId(api: ApiClient, taskId: string, wanted: "done" | "todo") {
+  const task = await api.get<{ id: string; boardId: string }>(`/api/tasks/${taskId}`);
+  const statuses = await api.get<{ id: string; name: string }[]>("/api/statuses", {
+    board_id: task.boardId,
+  });
+  const matches = statuses.filter((status) => {
+    const name = normalizedStatusName(status.name);
+    return wanted === "done"
+      ? name === "done" || name === "completed" || name === "concluida" || name === "concluido"
+      : name === "to do" || name === "todo";
+  });
+  if (matches.length !== 1) throw new Error(`Expected one canonical ${wanted} status; use list_statuses and move_task to choose explicitly`);
+  return matches[0].id;
+}
 
 export function registerTaskTools(server: McpServer, api: ApiClient) {
+  server.registerTool(
+    "get_task",
+    {
+      title: "Get task",
+      description: "Return one complete task by id, including status, group, tags, assignees and sprint.",
+      inputSchema: { taskId: z.string() },
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async ({ taskId }) => {
+      try { return toJson(await api.get(`/api/tasks/${taskId}`)); }
+      catch (err) { return toError("get_task", err); }
+    },
+  );
+
   server.registerTool(
     "list_tasks",
     {
@@ -14,6 +54,7 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
         "Return tasks, optionally filtered by board, status, priority, assignee, tag, or search term. Without boardId, results are scoped to boards the caller can access.",
       inputSchema: {
         boardId: z.string().optional().describe("Board UUID"),
+        groupId: z.string().optional().describe("Group UUID"),
         statusId: z.string().optional().describe("Status UUID"),
         priority: priorityEnum.optional(),
         assigneeIds: z
@@ -41,6 +82,7 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
       try {
         const tasks = await api.get<unknown[]>("/api/tasks", {
           board_id: args.boardId,
+          group_id: args.groupId,
           status_id: args.statusId,
           priority: args.priority,
           assignee_id: args.assigneeIds,
@@ -82,8 +124,8 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
         "Create a task on a board. Omit statusId to start in the Backlog (status null). Assignees must have access to the board's workspace — the server silently drops foreign ids.",
       inputSchema: {
         boardId: z.string(),
-        title: z.string().min(1),
-        description: z.string().optional(),
+        title: z.string().trim().min(1),
+        description: z.string().optional().describe("Rich HTML; Markdown is not rendered"),
         statusId: z
           .string()
           .nullable()
@@ -100,15 +142,15 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
           .describe(
             "Sprint UUID on the same board, or null/omitted for the backlog (no sprint)",
           ),
-        startDate: z.string().optional().describe("YYYY-MM-DD"),
-        dueDate: z
-          .string()
+        startDate: dateInput.optional(),
+        dueDate: dateInput
           .optional()
           .describe("YYYY-MM-DD, must not precede startDate"),
       },
     },
     async (args) => {
       try {
+        if (args.startDate && args.dueDate && args.startDate > args.dueDate) throw new Error("dueDate must not precede startDate");
         const task = await api.post<unknown>("/api/tasks", args);
         return toJson(task);
       } catch (err) {
@@ -125,7 +167,7 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
         "Patch any subset of fields on a task. Pass statusId=null to move the task to Backlog. Use this to move between columns, rename, retag, reassign, or change priority/dates.",
       inputSchema: {
         taskId: z.string(),
-        title: z.string().optional(),
+        title: z.string().trim().min(1).optional(),
         description: z.string().nullable().optional(),
         statusId: z.string().nullable().optional(),
         groupId: z.string().nullable().optional(),
@@ -137,16 +179,61 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
           .nullable()
           .optional()
           .describe("Sprint UUID on the same board; null sends to backlog"),
-        startDate: z.string().nullable().optional(),
-        dueDate: z.string().nullable().optional(),
+        startDate: dateInput.nullable().optional(),
+        dueDate: dateInput.nullable().optional(),
       },
     },
     async ({ taskId, ...patch }) => {
       try {
+        if (!Object.keys(patch).length) throw new Error("Provide at least one field to update");
+        if ("startDate" in patch || "dueDate" in patch) {
+          const current = await api.get<{ startDate: string | null; dueDate: string | null }>(`/api/tasks/${taskId}`);
+          const start = patch.startDate === undefined ? current.startDate?.slice(0, 10) : patch.startDate;
+          const due = patch.dueDate === undefined ? current.dueDate?.slice(0, 10) : patch.dueDate;
+          if (start && due && start > due) throw new Error("dueDate must not precede startDate");
+        }
         const task = await api.put<unknown>(`/api/tasks/${taskId}`, patch);
         return toJson(task);
       } catch (err) {
         return toError("update_task", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "complete_task",
+    {
+      title: "Mark a task complete",
+      description:
+        "Move a task to the board's canonical Done status. The status id is resolved automatically, so callers do not need to know board-specific UUIDs.",
+      inputSchema: { taskId: z.string() },
+    },
+    async ({ taskId }) => {
+      try {
+        const statusId = await findBoardStatusId(api, taskId, "done");
+        const task = await api.put<unknown>(`/api/tasks/${taskId}`, { statusId });
+        return toJson(task);
+      } catch (err) {
+        return toError("complete_task", err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "reopen_task",
+    {
+      title: "Reopen a task",
+      description:
+        "Move a task back to the board's canonical To Do status. Use update_task when a specific status column is required.",
+      inputSchema: { taskId: z.string() },
+    },
+    async ({ taskId }) => {
+      try {
+        const statusId = await findBoardStatusId(api, taskId, "todo");
+        const task = await api.put<unknown>(`/api/tasks/${taskId}`, { statusId });
+        return toJson(task);
+      } catch (err) {
+        return toError("reopen_task", err);
       }
     },
   );
@@ -210,8 +297,8 @@ export function registerTaskTools(server: McpServer, api: ApiClient) {
           .object({
             statusId: z.string().nullable().optional(),
             priority: priorityEnum.optional(),
-            startDate: z.string().nullable().optional(),
-            dueDate: z.string().nullable().optional(),
+            startDate: dateInput.nullable().optional(),
+            dueDate: dateInput.nullable().optional(),
             sprintId: z.string().nullable().optional(),
             addAssigneeIds: z.array(z.string()).optional(),
             addTagIds: z.array(z.string()).optional(),

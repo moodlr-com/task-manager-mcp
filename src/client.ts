@@ -60,6 +60,7 @@ export class ApiClient {
 
     const init: RequestInit = {
       method,
+      redirect: "error",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         Accept: "application/json",
@@ -72,7 +73,10 @@ export class ApiClient {
         : {}),
     };
 
-    const res = await this.fetchImpl(url.toString(), init);
+    const timeoutMs = Number(process.env.MOODLR_API_TIMEOUT_MS ?? 30_000);
+    const timeout = Number.isSafeInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 2_147_483_647 ? timeoutMs : 30_000;
+    const signal = AbortSignal.timeout(timeout);
+    const res = await this.fetchImpl(url.toString(), { ...init, signal });
 
     if (res.status === 204) {
       return undefined as T;

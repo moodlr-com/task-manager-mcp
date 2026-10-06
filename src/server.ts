@@ -10,8 +10,14 @@ import { registerCommentTools } from "./tools/comments.js";
 import { registerActivityTools } from "./tools/activity.js";
 import { registerSprintTools } from "./tools/sprints.js";
 import { registerUserTools } from "./tools/users.js";
+import { registerGroupTools } from "./tools/groups.js";
+import { registerWorkspaceManagementTools } from "./tools/workspace-management.js";
+import { registerSearchTools } from "./tools/search.js";
+import { registerSavedFilterTools } from "./tools/saved-filters.js";
+import { registerInviteTools } from "./tools/invites.js";
+import { registerProfileTools } from "./tools/profile.js";
 
-const PACKAGE_VERSION = "0.2.1";
+const PACKAGE_VERSION = "0.3.0";
 
 export function createServer(api: ApiClient): McpServer {
   const server = new McpServer(
@@ -26,7 +32,7 @@ export function createServer(api: ApiClient): McpServer {
         "2. Call list_boards (optionally scoped by workspaceId) to find the board.",
         "3. Call list_statuses(boardId) so you know valid statusIds before moving tasks.",
         "4. Call list_tasks(boardId) to see what exists before creating duplicates.",
-        "5. Use create_task / update_task / move_task / delete_task to mutate.",
+        "5. Use create_task / update_task / move_task / complete_task / reopen_task / delete_task to mutate.",
         "",
         "statusId=null means the task is in the Backlog column.",
         "Dates are ISO strings (YYYY-MM-DD). Priority is one of low/medium/high/critical.",
@@ -50,6 +56,12 @@ export function createServer(api: ApiClient): McpServer {
   registerActivityTools(server, api);
   registerSprintTools(server, api);
   registerUserTools(server, api);
+  registerGroupTools(server, api);
+  registerWorkspaceManagementTools(server, api);
+  registerSearchTools(server, api);
+  registerSavedFilterTools(server, api);
+  registerInviteTools(server, api);
+  registerProfileTools(server, api);
 
   return server;
 }
