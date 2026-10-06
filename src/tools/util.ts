@@ -4,7 +4,7 @@ import { ApiError } from "../client.js";
 /** Format a value as a JSON text content block for MCP. */
 export function toJson(value: unknown): CallToolResult {
   return {
-    content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+    content: [{ type: "text", text: JSON.stringify(value ?? null, null, 2) }],
   };
 }
 
